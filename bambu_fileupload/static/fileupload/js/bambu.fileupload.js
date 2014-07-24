@@ -8,12 +8,12 @@ bambu.fileupload = {
         var input = $('#' + context + '_input');
         var dropZoneTimeout = null;
         var originalHTML = zone.html();
-        
+
         zone.data('bambu.fileupload.handler', handlerURL);
         if(typeof(deleteHandlerURL) != 'undefined') {
             zone.data('bambu.fileupload.handler.delete', deleteHandlerURL);
         }
-        
+
         function getCookie(name) {
             var cookieValue = null;
             if (document.cookie && document.cookie != '') {
@@ -26,10 +26,10 @@ bambu.fileupload = {
                 }
             }
         }
-        
+
         function createUploader() {
             var csrftoken = getCookie('csrftoken');
-            
+
             input.fileupload(
                 {
                     dataType: 'json',
@@ -39,40 +39,41 @@ bambu.fileupload = {
                     singleFileUploads: false,
                     add: function(e, data) {
                         var addFiles = 0;
-                        
+
                         $.each(data.files,
                             function(index, file) {
                                 if(typeof(file.size) == 'number' && file.size > 0) {
                                     addFiles ++;
                                 }
-                                
+
                                 if(addFiles == 1) {
                                     $(document).trigger('fileupload:start');
                                 }
                             }
                         );
-                        
+
                         if(addFiles == 0) {
                             return;
                         }
-                        
+
                         zone.addClass('full').removeClass('error').html(
                             '<div class="progress"><div class="progress-bar"></div></div>' +
                             '<small>Calculating time remaining</small>'
                         );
-                        
+
+                        zone.data('bambu.fileupload.count', addFiles);
                         data.submit();
                     },
                     progressall: function(e, data) {
                         if(!data.total) {
                             return;
                         }
-                        
+
                         var progress = data.loaded / data.total * 100;
                         var kbps = Math.round(
                             data.bitrate / 1024, 0
                         ).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                        
+
                         zone.find('.progress .progress-bar').css('width', progress + '%');
                         if(progress >= 100) {
                             zone.find('small').html('Finishing up');
@@ -84,7 +85,7 @@ bambu.fileupload = {
                         zone.removeClass('full').html(originalHTML);
                         $(document).trigger('fileupload:done');
                         callback(data);
-                        
+
                         input = $('#' + context + '_input');
                         createUploader();
                     },
@@ -96,9 +97,9 @@ bambu.fileupload = {
                 }
             );
         }
-        
+
         createUploader();
-        
+
         $(document).bind('dragover',
             function(e) {
                 if (!dropZoneTimeout) {
@@ -106,13 +107,13 @@ bambu.fileupload = {
                 } else {
                     clearTimeout(dropZoneTimeout);
                 }
-                
+
                 if (e.target === zone[0]) {
                     zone.addClass('hover');
                 } else {
                     zone.removeClass('hover');
                 }
-                
+
                 dropZoneTimeout = setTimeout(
                     function() {
                         dropZoneTimeout = null;
@@ -127,7 +128,8 @@ bambu.fileupload = {
         var id = e.dropZone.attr('id');
         var deleteHandler = e.dropZone.data('bambu.fileupload.handler.delete');
         var deleted = e.dropZone.data('bambu.fileupload.deleted');
-        
+        var added = e.dropZone.data('bambu.fileupload.count');
+
         if(!e.dropZone.data('bambu.fileupload.filelist')) {
             ul = $('<ul class="fileupload-filelist"></ul>');
             e.dropZone.after(ul);
@@ -135,18 +137,30 @@ bambu.fileupload = {
         } else {
             ul = e.dropZone.data('bambu.fileupload.filelist');
         }
-        
+
+        if(typeof(added) != 'undefined') {
+            if(e.result.length < added) {
+                $(document).trigger('fileupload:errors',
+                    {
+                        errorCount: parseInt(added) - e.result.length,
+                        successCount: e.result.length,
+                        totalCount: added
+                    }
+                );
+            }
+        }
+
         for(var i = 0; i < e.result.length; i ++) {
             if(typeof(deleted) != 'undefined' && e.result[i].url in deleted) {
                 continue;
             }
-            
+
             text = e.result[i].name;
             parts = e.result[i].url.split('.');
             extension = parts[parts.length - 1];
             modalID = id + '-preview-modal-' + (ul.find('li').length + 1);
             li = $('<li></li>').addClass('file ' + extension);
-            
+
             if(e.result[i].type && e.result[i].type.substr(0, 6) == 'image/') {
                 modal = $(
                     '<div id="' + modalID + '" class="modal fade fileupload-image-preview" role="dialog">' +
@@ -162,7 +176,7 @@ bambu.fileupload = {
                         '</div>' +
                     '</div>'
                 );
-                
+
                 modal.find('img').attr('src', e.result[i].url);
                 $(document).find('body').append(modal);
                 a = $('<a class="download" href="#' + modalID + '" data-toggle="modal"></a>');
@@ -170,16 +184,16 @@ bambu.fileupload = {
                 a = $('<a class="download" download></a>');
                 a.attr('href', e.result[i].url);
             }
-            
+
             a.html(text);
             li.attr('data-url', e.result[i].url);
             li.append(a);
-            
+
             if(deleteHandler) {
                 del = $('<a class="fileupload-delete" href="javascript:bambu.fileupload.deleteAttachment(\'' + escape(id) + '\', \'' + escape(e.result[i].url) + '\');"><small>&times;</small></a>');
                 li.append(del);
             }
-            
+
             ul.append(li);
         }
     },
@@ -187,7 +201,7 @@ bambu.fileupload = {
         var guid = $('input[name="_bambu_fileupload_guid"]').val();
         var zone = $('#' + context);
         var handlerURL = zone.data('bambu.fileupload.handler.delete');
-        
+
         $('.fileupload-filelist li[data-url="' + fileURL + '"] a').attr('disabled');
         jQuery.ajax(
             {
@@ -197,11 +211,11 @@ bambu.fileupload = {
                 context: zone,
                 success: function() {
                     var deleted = $(this).data('bambu.fileupload.deleted');
-                    
+
                     if(typeof(deleted) == 'undefined') {
                         deleted = [];
                     }
-                    
+
                     deleted.push(fileURL);
                     $(this).data('bambu.fileupload.deleted', deleted);
                     $('.fileupload-filelist li[data-url="' + fileURL + '"]').remove();
@@ -221,7 +235,7 @@ bambu.fileupload = {
                     var ul, modal, modalID, li, a, text, parts, extension, del;
                     var deleteHandler = zone.data('bambu.fileupload.handler.delete');
                     var deleted = zone.data('bambu.fileupload.deleted');
-                    
+
                     if(!zone.data('bambu.fileupload.filelist')) {
                         ul = $('<ul class="fileupload-filelist"></ul>');
                         zone.after(ul);
@@ -229,18 +243,18 @@ bambu.fileupload = {
                     } else {
                         ul = zone.data('bambu.fileupload.filelist');
                     }
-                    
+
                     for(var i = 0; i < files.length; i ++) {
                         if(typeof(deleted) != 'undefined' && files[i].url in deleted) {
                             continue;
                         }
-                        
+
                         text = files[i].name;
                         parts = files[i].url.split('.');
                         extension = parts[parts.length - 1];
                         modalID = context + '-preview-modal-' + (ul.find('li').length + 1);
                         li = $('<li></li>').addClass('file ' + extension);
-                        
+
                         if(files[i].type && files[i].type.substr(0, 6) == 'image/') {
                             modal = $(
                                 '<div id="' + modalID + '" class="modal fade fileupload-image-preview" role="dialog">' +
@@ -256,7 +270,7 @@ bambu.fileupload = {
                                     '</div>' +
                                 '</div>'
                             );
-                            
+
                             modal.find('img').attr('src', files[i].url);
                             $(document).find('body').append(modal);
                             a = $('<a class="download" href="#' + modalID + '" data-toggle="modal"></a>');
@@ -264,16 +278,16 @@ bambu.fileupload = {
                             a = $('<a class="download" download></a>');
                             a.attr('href', files[i].url);
                         }
-                        
+
                         a.html(text);
                         li.attr('data-url', files[i].url);
                         li.append(a);
-                        
+
                         if(deleteHandler) {
                             del = $('<a class="fileupload-delete" href="javascript:bambu.fileupload.deleteAttachment(\'' + escape(context) + '\', \'' + escape(files[i].url) + '\');"><small>&times;</small></a>');
                             li.append(del);
                         }
-                        
+
                         ul.append(li);
                     }
                 }
