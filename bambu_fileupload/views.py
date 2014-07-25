@@ -112,9 +112,14 @@ def upload(request):
             fail += 1
             continue
 
-    return HttpResponse(
-        simplejson.dumps(result),
-        content_type = 'application/json'
+    if success:
+        return HttpResponse(
+            simplejson.dumps(result),
+            content_type = 'application/json'
+        )
+
+    return HttpResponseBadRequest(
+        'Your files could not be uploaded.'
     )
 
 @login_required

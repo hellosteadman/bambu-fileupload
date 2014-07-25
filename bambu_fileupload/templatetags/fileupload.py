@@ -1,6 +1,8 @@
-from django.template import Library
+from django.template import Library, TemplateSyntaxError
+from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.importlib import import_module
+from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 from django.utils.http import urlencode
 from bambu_fileupload import DEFAULT_HANDLERS
@@ -21,10 +23,10 @@ def fileupload_styles():
 def fileupload_scripts():
     return {}
 
-@register.inclusion_tag('fileupload/container.inc.html', takes_context = True)
-def fileupload_container(context, handler = 'attachments', parameters = '', callback_js = None):
+@register.simple_tag(takes_context = True)
+def fileupload_container(context, handler = 'attachments', callback_js = None, style = 'drag', **kwargs):
     if not handler in HANDLERS:
-        raise Exception('File uploaded handler %s not recognised' % handler)
+        raise TemplateSyntaxError('File uploaded handler %s not recognised' % handler)
 
     h = HANDLERS[handler]
     deletable = False
@@ -49,12 +51,12 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
     try:
         module = import_module(module)
     except ImportError, ex:
-        raise Exception('Could not import module %s' % module, ex)
+        raise TemplateSyntaxError('Could not import module %s' % module, ex)
 
     try:
         func = getattr(module, func)
     except AttributeError, ex:
-        raise Exception(
+        raise TemplateSyntaxError(
             'Could not load handler %s from module %s' % (func, module.__name__), ex
         )
 
@@ -67,8 +69,11 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
     else:
         guid = None
 
-    if not parameters:
-        parameters = 'guid=%s' % guid
+    if not any(kwargs):
+        kwargs = dict(guid = guid)
+
+    if not style in ('drag', 'button'):
+        raise TemplateSyntaxError('style argument must be set to \'drag\' or \'button\'')
 
     container_id = 'bambu_fileupload_%s' % ''.join(random.sample(string.digits + string.letters, 6))
     script = """\n<script>\n//<![CDATA[\njQuery(document).ready(
@@ -82,7 +87,7 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
         urlencode(
             {
                 'handler': handler,
-                'params': parameters
+                'params': urlencode(kwargs)
             }
         ),
         callback_js,
@@ -91,7 +96,7 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
             urlencode(
                 {
                     'handler': handler,
-                    'params': parameters
+                    'params': urlencode(kwargs)
                 }
             )
         ) or '',
@@ -101,7 +106,7 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
                 urlencode(
                     {
                         'handler': handler,
-                        'params': parameters
+                        'params': urlencode(kwargs)
                     }
                 )
             )
@@ -111,12 +116,12 @@ def fileupload_container(context, handler = 'attachments', parameters = '', call
     if guid:
         script = u'<input name="_bambu_fileupload_guid" value="%s" type="hidden" />%s' % (guid, script)
 
-    return {
-        'id': container_id,
-        'guid': guid,
-        'script': script
-    }
-
-@register.filter
-def fileuploadparam(value, name):
-    return '%s=%s' % (name, value)
+    return render_to_string(
+        'fileupload/%s.inc.html' % style,
+        {
+            'id': container_id,
+            'guid': guid,
+            'script': script,
+            'style': style
+        }
+    )

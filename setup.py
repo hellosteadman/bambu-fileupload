@@ -4,7 +4,7 @@ from os import path
 
 setup(
     name = 'bambu-fileupload',
-    version = '2.0.2',
+    version = '2.1',
     description = 'A wrapper around the jQuery.fileupload library',
     author = 'Steadman',
     author_email = 'mark@steadman.io',

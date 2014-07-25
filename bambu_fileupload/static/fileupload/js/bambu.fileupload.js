@@ -16,11 +16,11 @@ bambu.fileupload = {
 
         function getCookie(name) {
             var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
+            if(document.cookie && document.cookie != '') {
                 var cookies = document.cookie.split(';');
                 for (var i = 0; i < cookies.length; i++) {
                     var cookie = $.trim(cookies[i]);
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    if(cookie.substring(0, name.length + 1) == (name + '=')) {
                         return decodeURIComponent(cookie.substring(name.length + 1));
                     }
                 }
@@ -56,10 +56,19 @@ bambu.fileupload = {
                             return;
                         }
 
-                        zone.addClass('full').removeClass('error').html(
-                            '<div class="progress"><div class="progress-bar"></div></div>' +
-                            '<small>Calculating time remaining</small>'
-                        );
+                        zone.addClass('full').removeClass('error');
+                        if(zone.hasClass('fileupload-container')) {
+                            zone.html(
+                                '<div class="progress"><div class="progress-bar"></div></div>' +
+                                '<small>Calculating time remaining</small>'
+                            );
+                        } else {
+                            zone.find('.btn').attr(
+                                'disabled', 'disabled'
+                            ).addClass('disabled').find('.label').html(
+                                '<span class="fa fa-spinner fa-spin"></span> Uploading'
+                            );
+                        }
 
                         zone.data('bambu.fileupload.count', addFiles);
                         data.submit();
@@ -74,15 +83,22 @@ bambu.fileupload = {
                             data.bitrate / 1024, 0
                         ).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-                        zone.find('.progress .progress-bar').css('width', progress + '%');
-                        if(progress >= 100) {
-                            zone.find('small').html('Finishing up');
-                        } else {
-                            zone.find('small').html('Uploading at ' + kbps + 'kbps');
+                        if(zone.hasClass('fileupload-container')) {
+                            zone.find('.progress .progress-bar').css('width', progress + '%');
+                            if(progress >= 100) {
+                                zone.find('small').html('Finishing up');
+                            } else {
+                                zone.find('small').html('Uploading at ' + kbps + 'kbps');
+                            }
                         }
                     },
                     done: function(e, data) {
                         zone.removeClass('full').html(originalHTML);
+
+                        if(zone.hasClass('fileupload-button')) {
+                            zone.removeAttr('disabled').removeClass('disabled');
+                        }
+
                         $(document).trigger('fileupload:done');
                         callback(data);
 
@@ -90,9 +106,25 @@ bambu.fileupload = {
                         createUploader();
                     },
                     error: function(e, data) {
-                        zone.addClass('error').find('small').html(
-                            'Errors occurred during the upload. Please try again'
-                        );
+                        zone.addClass('error');
+
+                        if(zone.hasClass('fileupload-container')) {
+                            zone.find('small').html(
+                                'Errors occurred during the upload. Please try again'
+                            );
+                        } else {
+                            zone.find('.btn').removeClass(
+                                'btn-primary disabled'
+                            ).addClass(
+                                'btn-danger'
+                            ).removeAttr(
+                                'disabled'
+                            ).find('.label').html(
+                                '<span class="fa fa-exclamation-circle"></span> Try again'
+                            );
+                        }
+
+                        $(document).trigger('fileupload:error');
                     }
                 }
             );
@@ -102,13 +134,13 @@ bambu.fileupload = {
 
         $(document).bind('dragover',
             function(e) {
-                if (!dropZoneTimeout) {
+                if(!dropZoneTimeout) {
                     zone.addClass('in');
                 } else {
                     clearTimeout(dropZoneTimeout);
                 }
 
-                if (e.target === zone[0]) {
+                if(e.target === zone[0]) {
                     zone.addClass('hover');
                 } else {
                     zone.removeClass('hover');
