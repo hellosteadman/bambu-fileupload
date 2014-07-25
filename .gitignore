@@ -1,1 +1,4 @@
 *.pyc
+
+/bambu_fileupload.egg-info/
+/dist/
