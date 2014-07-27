@@ -17,7 +17,6 @@ except ImportError:
 
 HANDLERS = dict(getattr(settings, 'FILEUPLOAD_HANDLERS', DEFAULT_HANDLERS))
 
-@login_required
 @csrf_exempt
 def upload(request):
     handler = request.GET.get('handler')
