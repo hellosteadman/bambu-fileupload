@@ -4,13 +4,13 @@ from os import path
 
 setup(
     name = 'bambu-fileupload',
-    version = '2.2.1',
+    version = '3.0',
     description = 'A wrapper around the jQuery.fileupload library',
     author = 'Steadman',
     author_email = 'mark@steadman.io',
     url = 'http://pypi.python.org/pypi/bambu-fileupload',
     install_requires = [
-        'Django>=1.4'
+        'Django>=1.8'
         'django-bower'
     ],
     packages = [
