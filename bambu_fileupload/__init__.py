@@ -1,7 +1,7 @@
 from django.core.files import File
 from django.http import HttpRequest
 
-__version__ = '3.0'
+__version__ = '3.1'
 
 DEFAULT_HANDLERS = (
     (

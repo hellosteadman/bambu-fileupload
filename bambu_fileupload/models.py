@@ -1,12 +1,12 @@
 from django.db import models
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from bambu_attachments.models import Attachment
 
 class FileUploadContext(models.Model):
     uuid = models.CharField(max_length = 36, unique = True)
     created = models.DateTimeField(auto_now_add = True)
     user = models.ForeignKey('auth.User', related_name = 'file_upload_contexts')
-    attachments = generic.GenericRelation(Attachment)
+    attachments = GenericRelation(Attachment)
 
     def __unicode__(self):
         return self.uuid
