@@ -1,11 +1,11 @@
+from bambu_fileupload import DEFAULT_HANDLERS
+from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.template import Library, TemplateSyntaxError
 from django.template.loader import render_to_string
-from django.conf import settings
-from django.utils.importlib import import_module
 from django.utils.http import urlencode
-from django.core.urlresolvers import reverse
 from django.utils.http import urlencode
-from bambu_fileupload import DEFAULT_HANDLERS
+from importlib import import_module
 from uuid import uuid4
 import random, string
 

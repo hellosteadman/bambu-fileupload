@@ -1,14 +1,14 @@
+from bambu_fileupload import DEFAULT_HANDLERS
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.files.uploadedfile import UploadedFile
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.core.files.uploadedfile import UploadedFile
-from django.conf import settings
-from django.utils.importlib import import_module
-from urlparse import parse_qs
-from mimetypes import guess_type
+from importlib import import_module
 from logging import getLogger
-from bambu_fileupload import DEFAULT_HANDLERS
+from mimetypes import guess_type
+from urlparse import parse_qs
 
 try:
     import json as simplejson
